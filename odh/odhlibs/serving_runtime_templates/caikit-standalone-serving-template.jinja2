@@ -1,0 +1,60 @@
+apiVersion: v1
+items:
+- apiVersion: serving.kserve.io/v1alpha1
+  kind: ServingRuntime
+  metadata:
+    annotations:
+      opendatahub.io/recommended-accelerators: '["nvidia.com/gpu"]'
+      openshift.io/display-name: {{ display_name }}  # Jinja parameter
+    labels:
+      opendatahub.io/dashboard: "true"
+    name: {{ runtime_name }}  # Jinja parameter
+  spec:
+    annotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8086"
+    containers:
+    - command:
+      - python
+      - -m
+      - caikit.runtime
+      env:
+      - name: RUNTIME_LOCAL_MODELS_DIR
+        value: /mnt/models
+      - name: HF_HOME
+        value: /tmp/hf_home
+      - name: RUNTIME_GRPC_ENABLED
+        value: "{{ grpc_enabled }}"  # Jinja parameter
+      - name: RUNTIME_HTTP_ENABLED
+        value: "{{ http_enabled }}"  # Jinja parameter
+      image: {{ image }}  # Jinja parameter
+      livenessProbe:
+        exec:
+          command:
+          - python
+          - -m
+          - caikit_health_probe
+          - liveness
+        initialDelaySeconds: 5
+      name: kserve-container
+      ports:
+      - containerPort: {{ container_port }}  # Jinja parameter
+        protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+          - python
+          - -m
+          - caikit_health_probe
+          - readiness
+        initialDelaySeconds: 5
+      startupProbe:
+        failureThreshold: 24
+        httpGet:
+          path: /health
+          port: 8080  # Jinja parameter
+        periodSeconds: 30
+    multiModel: false
+    supportedModelFormats:
+    - autoSelect: true
+      name: caikit

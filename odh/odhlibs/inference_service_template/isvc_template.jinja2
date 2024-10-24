@@ -1,0 +1,18 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    security.opendatahub.io/enable-auth: "{{ enableAuth | default('false') }}"
+    serving.knative.openshift.io/enablePassthrough: "{{ enablePassthrough | default('true') }}"
+    sidecar.istio.io/inject: "{{ istio_sidecar_inject | default('true') }}"
+    sidecar.istio.io/rewriteAppHTTPProbers: "true"  # default
+    serving.kserve.io/deploymentMode: {{ deploymentMode | default('Serverless') }}  # default
+  name: {{ model_name }}  # default value
+spec:
+  predictor:
+    minReplicas: {{ min_replicas | default(1) }}  # default value
+    model:
+      modelFormat:
+        name: {{ model_format | default('onnx') }}  # default value
+      runtime: {{ runtime | default('ovms-runtime') }}  # default value
+      storageUri: {{ storage_uri | default('oci://quay.io/mwaykole/test:mnist-8-big') }}  # default value

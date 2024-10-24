@@ -1,0 +1,18 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    security.opendatahub.io/enable-auth: "true"
+    serving.knative.openshift.io/enablePassthrough: "true"
+    sidecar.istio.io/inject: "true"
+    sidecar.istio.io/rewriteAppHTTPProbers: "true"  # default
+    serving.kserve.io/deploymentMode: Serverless  # default
+  name: test-mnist-serverless-1  # default value
+spec:
+  predictor:
+    minReplicas: 1  # default value
+    model:
+      modelFormat:
+        name: onnx  # default value
+      runtime: test-serving-runtime-1  # default value
+      storageUri: oci://quay.io/mwaykole/test:mnist-8-1  # default value
