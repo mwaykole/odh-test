@@ -1,5 +1,5 @@
 import time
-
+from odh.odhlibs.utils import get_elements_with_prefix
 from kubernetes.client import ApiException
 from kubernetes import client, config
 
@@ -44,7 +44,7 @@ def create_namespace(namespace_name):
     try:
         # Check if the namespace already exists
         v1.read_namespace(name=namespace_name)
-        o.warn(f"Namespace '{namespace_name}' already exists.")
+        o.warning(f"Namespace '{namespace_name}' already exists.")
     except ApiException as e:
         if e.status == 404:
             # Namespace does not exist, proceed with creation
@@ -233,7 +233,7 @@ def get_pod_names_from_deployment(deployment_name: str, namespace: str) -> list:
         raise
 
 
-def get_inference_service_url(service_name: str, namespace: str) -> str:
+def get_inference_service_url(service_name: str, namespace: str ) -> str:
     """
     Retrieve the URL of the specified InferenceService.
 
@@ -383,3 +383,45 @@ def wait_for_custom_resource_ready(resource_name: str, namespace: str, group: st
     # Timeout reached, resource did not become ready
     print(f"Timeout: {resource_name} did not reach '{expected_value}' within {timeout} seconds.")
     return False
+
+
+def get_model_pod_restart_count(namespace, model_name):
+    """
+    Get the restart count of a pod associated with a specific deployment in the given namespace.
+
+    Args:
+        namespace (str): The Kubernetes namespace where the deployment resides.
+        model_name (str): The model name to filter deployments by.
+
+    Returns:
+        int: The restart count for the first matching pod found, or None if no pod is found.
+    """
+    # Retrieve all deployments within the namespace
+    deployments = get_deployments_in_namespace(namespace=namespace)
+    o.info("Found deployments: {}".format(deployments))
+    assert deployments, "No deployments found in the specified namespace!"
+
+    # Filter deployments based on the model name prefix
+    matching_deployments = get_elements_with_prefix(deployments, model_name)
+    if not matching_deployments:
+        o.error("No deployment found with model name prefix: {}".format(model_name))
+        return None
+
+    deployment_name = matching_deployments[0]
+    o.info("Matched deployment name: {}".format(deployment_name))
+
+    # Retrieve pod names from the matched deployment
+    pod_names = get_pod_names_from_deployment(deployment_name, namespace=namespace)
+    if not pod_names:
+        o.error("No pods found for deployment: {}".format(deployment_name))
+        return None
+
+    pod_name = pod_names[0]
+    o.info("Pod name associated with deployment: {}".format(pod_name))
+
+    # Retrieve and return the restart count for the pod
+    pod_restart_count = get_pod_restart_count(pod_name, namespace)
+    o.info("Pod '{}' restart count: {}".format(pod_name, pod_restart_count))
+
+    return pod_restart_count
+

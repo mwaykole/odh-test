@@ -67,3 +67,5 @@ serving_runtime_context_ovms = {
     'image': 'quay.io/modh/openvino_model_server@sha256:9086c1ba1ba30d358194c534f0563923aab02d03954e43e9f3647136b44a5daf',
     'container_port': 8080
 }
+
+
